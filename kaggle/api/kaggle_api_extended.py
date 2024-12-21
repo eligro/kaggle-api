@@ -402,7 +402,7 @@ class KaggleApi(KaggleApi):
            configuration file.
         """
 
-        if config is None:
+        if config_data is None:
             config_data = {}
             # Ex: 'datasets list', 'competitions files', 'models instances get', etc.
             api_command = ' '.join(sys.argv[1:])
