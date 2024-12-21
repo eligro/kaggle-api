@@ -395,36 +395,37 @@ class KaggleApi(KaggleApi):
 
     ## Authentication
 
-    def authenticate(self):
+    def authenticate(self, config_data=None):
         """authenticate the user with the Kaggle API. This method will generate
            a configuration, first checking the environment for credential
            variables, and falling back to looking for the .kaggle/kaggle.json
            configuration file.
         """
 
-        config_data = {}
-        # Ex: 'datasets list', 'competitions files', 'models instances get', etc.
-        api_command = ' '.join(sys.argv[1:])
-
-        # Step 1: try getting username/password from environment
-        config_data = self.read_config_environment(config_data)
-
-        # Step 2: if credentials were not in env read in configuration file
-        if self.CONFIG_NAME_USER not in config_data \
-                or self.CONFIG_NAME_KEY not in config_data:
-            if os.path.exists(self.config):
-                config_data = self.read_config_file(config_data)
-            elif self._is_help_or_version_command(api_command) or (
-                    len(sys.argv) > 2 and api_command.startswith(
-                        self.command_prefixes_allowing_anonymous_access)):
-                # Some API commands should be allowed without authentication.
-                return
-            else:
-                raise IOError('Could not find {}. Make sure it\'s located in'
-                              ' {}. Or use the environment method. See setup'
-                              ' instructions at'
-                              ' https://github.com/Kaggle/kaggle-api/'.format(
-                                  self.config_file, self.config_dir))
+        if config is None:
+            config_data = {}
+            # Ex: 'datasets list', 'competitions files', 'models instances get', etc.
+            api_command = ' '.join(sys.argv[1:])
+    
+            # Step 1: try getting username/password from environment
+            config_data = self.read_config_environment(config_data)
+    
+            # Step 2: if credentials were not in env read in configuration file
+            if self.CONFIG_NAME_USER not in config_data \
+                    or self.CONFIG_NAME_KEY not in config_data:
+                if os.path.exists(self.config):
+                    config_data = self.read_config_file(config_data)
+                elif self._is_help_or_version_command(api_command) or (
+                        len(sys.argv) > 2 and api_command.startswith(
+                            self.command_prefixes_allowing_anonymous_access)):
+                    # Some API commands should be allowed without authentication.
+                    return
+                else:
+                    raise IOError('Could not find {}. Make sure it\'s located in'
+                                  ' {}. Or use the environment method. See setup'
+                                  ' instructions at'
+                                  ' https://github.com/Kaggle/kaggle-api/'.format(
+                                      self.config_file, self.config_dir))
 
         # Step 3: load into configuration!
         self._load_config(config_data)
@@ -2246,7 +2247,7 @@ class KaggleApi(KaggleApi):
         meta_file = self.kernels_initialize(folder)
         print('Kernel metadata template written to: ' + meta_file)
 
-    def kernels_push(self, folder):
+    def kernels_push(self, folder, meta_data=None):
         """ read the metadata file and kernel files from a notebook, validate
             both, and use Kernel API to push to Kaggle if all is valid.
              Parameters
@@ -2256,13 +2257,14 @@ class KaggleApi(KaggleApi):
         if not os.path.isdir(folder):
             raise ValueError('Invalid folder: ' + folder)
 
-        meta_file = os.path.join(folder, self.KERNEL_METADATA_FILE)
-        if not os.path.isfile(meta_file):
-            raise ValueError('Metadata file not found: ' +
-                             self.KERNEL_METADATA_FILE)
+        if meta_data is None:
+            meta_file = os.path.join(folder, self.KERNEL_METADATA_FILE)
+            if not os.path.isfile(meta_file):
+                raise ValueError('Metadata file not found: ' +
+                                 self.KERNEL_METADATA_FILE)
 
-        with open(meta_file) as f:
-            meta_data = json.load(f)
+            with open(meta_file) as f:
+                meta_data = json.load(f)
 
         title = self.get_or_default(meta_data, 'title', None)
         if title and len(title) < 5:
